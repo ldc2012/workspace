@@ -77,6 +77,7 @@ public:
 private:
 		/* http server */
 		static void *http_start_server(void *arg);
+		static void snmp_handle_postdata(struct evhttp_request *req, void *arg);
 		static void http_handle_postdata(struct evhttp_request *req, void *arg);
 		static void parse_openstack_data(void *arg,
 				                         struct evhttp_request *req, 

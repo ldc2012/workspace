@@ -18,7 +18,6 @@ LD     := g++
 AR     := ar rc
 RANLIB := ranlib
 
-
 #****************************************************************************
 # debug flags
 #****************************************************************************
@@ -27,7 +26,7 @@ DEBUG_CFLAGS += -DDEBUG #调试
 DEBUG_CFLAGS += -DOPEN_LOGDEBUG
 #DEBUG_CFLAGS += -DOPEN_LOG_TO_TERMINAL
 
-RELEASE_CFLAGS   := -m32 -Wall -Wno-unknown-pragmas -Wno-format -O2
+RELEASE_CFLAGS   := -Wall -Wno-unknown-pragmas -Wno-format -O2
 
 DEBUG_CXXFLAGS   := ${DEBUG_CFLAGS} 
 RELEASE_CXXFLAGS := ${RELEASE_CFLAGS}
@@ -59,26 +58,20 @@ endif
 #****************************************************************************
 # Library paths 
 #****************************************************************************
-LIBS := -L/usr/local/lib \
-		-L/opt/gnome/lib \
-		-L/usr/local/mysql/lib/mysql \
-		-lpthread -ldl -lrt \
+LIBS :=         -L/usr/local/lib\
+                -lpthread -ldl -lrt \
 		-levent\
 		-ljson\
-		-lz\
-		-lmysqlclient\
-		#/usr/local/mysql/lib/mysql/libmysqlclient.a
-		#-lmysqlclient
+		-lghttp\
 
 #****************************************************************************
 # Include paths
 #****************************************************************************
-INCS := -I../\
-		-I../include\
-		-I/usr/local/include/json/\
-		-I/opt/gnome/include\
-		-I/usr/local/mysql/include\
-
+INCS := -I../include\
+	-I/usr/local/include/json/\
+ 	-I/opt/gnome/include\
+	-I/usr/include/x86_64-linux-gnu\
+	-I/usr/local/include\
 #****************************************************************************
 # Makefile code common to all platforms
 #****************************************************************************
@@ -90,7 +83,7 @@ CXXFLAGS := ${CXXFLAGS} ${DEFS}
 # Targets of the build
 #****************************************************************************
 
-OUTPUT := cloud_evaluation_center
+OUTPUT := cloud_monitor_center
 
 all: ${OUTPUT}
 

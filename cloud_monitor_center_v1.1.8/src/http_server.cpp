@@ -104,9 +104,9 @@ void CHttpServer::http_handle_postdata(struct evhttp_request *req, void *arg)
 		memset(buffer_data, '\0', buffer_data_len + 1);
 		memcpy(buffer_data, EVBUFFER_DATA(req->input_buffer), buffer_data_len);
 		//post_data = (char *) EVBUFFER_DATA(req->input_buffer);
-printf("------------------------start---------------------------------------------\n");
-printf("%s\n", buffer_data);
-printf("------------------------end-----------------------------------------------\n");
+//printf("------------------------start---------------------------------------------\n");
+//printf("%s\n", buffer_data);
+//printf("------------------------end-----------------------------------------------\n");
 		//if(NULL == buffer_data)
 			//return;
 		http_reponse(req, &params, 200, "OK");	
@@ -145,16 +145,17 @@ void CHttpServer::parse_openstack_data(void *arg,
 		                               struct evkeyvalq params, 
 									   char *post_data)
 {
+
 	CHttpServer *pthis = (CHttpServer *)arg;
 
-	struct json_object *fst_obj = 0, *snd_obj = 0, *trd_obj = 0;
-	fst_obj = json_tokener_parse(post_data);
-	
+	struct json_object *fst_obj = NULL, *snd_obj = NULL, *trd_obj = NULL;
+	fst_obj = json_tokener_parse(post_data);	
 	if (is_error(fst_obj)){
 		logerr("parse json cloud data fail!!! data:(%s)", post_data);
-		return;
+		//printf("error parsing json:%s", json_tokener_errors[-(unsigned long)fst_obj]);
+        	return;
 	}
-
+   
 	char tm_buf[64];
 	char g_timestamp[32]={0};
 	host_data_st host_data;
@@ -164,11 +165,22 @@ void CHttpServer::parse_openstack_data(void *arg,
 
    	if (json_object_get_type(fst_obj) == json_type_array) {
 		for (int i=0 ; i<json_object_array_length(fst_obj) ; i++ ){
-			snd_obj = json_object_array_get_idx(fst_obj, i );
+                        snd_obj = json_object_array_get_idx(fst_obj, i );
+			if (NULL == snd_obj) {
+				logerr("parse cloud data get snd_obj == NULL!\n");
+				json_object_put(fst_obj);
+				return;
+			}
 			json_object_object_foreach(snd_obj, key, val) {
 				if (json_object_get_type(val) == json_type_array) {
 					for (int j=0; j<json_object_array_length(val); j++) {
 						trd_obj = json_object_array_get_idx(val, j);
+						if (NULL == trd_obj) {
+							logerr("parse cloud data get trd_obj == NULL!\n");
+							json_object_put(fst_obj);
+							json_object_put(snd_obj);
+							return;
+						}
 						json_object_object_foreach(trd_obj, key, val) {
 							
                             /* padding vm data info */
@@ -191,6 +203,7 @@ void CHttpServer::parse_openstack_data(void *arg,
 							else if (strcmp(key, VM_IO)==0)
 								vm_data.io_use_rate = json_object_get_double(val);
 						}
+						
 						/* 打印虚拟机运行数据日志 */                    
 						bzero(&tm_buf, 0);                  
 						get_time_str(vm_data.timestamp, tm_buf);
@@ -229,6 +242,7 @@ void CHttpServer::parse_openstack_data(void *arg,
 						host_data.io_use_rate = json_object_get_double(val);
 				}
 			}
+			
 			/* 打印物理主机运行数据 */
 			bzero(&tm_buf, 0);
 			get_time_str(host_data.timestamp, tm_buf);
@@ -245,10 +259,13 @@ void CHttpServer::parse_openstack_data(void *arg,
 
 	}
 
-	json_object_put(fst_obj);
-	json_object_put(snd_obj);
-	json_object_put(trd_obj);
-
+	if (NULL != fst_obj) 
+		json_object_put(fst_obj);
+	if (NULL != snd_obj)
+		json_object_put(snd_obj);
+	if (NULL != trd_obj)
+		json_object_put(trd_obj);
+        
 	return;
 }
 
@@ -274,7 +291,10 @@ void *CHttpServer::check_buffer(void *arg)
 		
         // 读取缓存数据
 	    const unsigned int ret_size = get_file_size(pathname);
-		if (ret_size == 0) break;
+	    if (ret_size == 0) {
+		select_sleep(300, 0); // sleep 5minutes
+            	continue;
+	    }
 	    char buf[ret_size];
 	    bzero(&buf, 0);
             
@@ -284,11 +304,11 @@ void *CHttpServer::check_buffer(void *arg)
 	    //pthread_mutex_lock(&pthis->m_mutex);
 	    fp = fopen(pathname, "r");
 	    fseek(fp, SEEK_SET, 0);
-		while(fgets(buf, sizeof(buf), fp)) {
+	    while(fgets(buf, sizeof(buf), fp)) {
 #ifdef DEBUG
 	    	printf("datas buffer to evaluation center.\n");
 #else
-			logrun("datas buffer to evaluation center.");
+		logrun("datas buffer to evaluation center.");
 #endif
 	   	    // 重新发给评估系统
 	    	stat_code = httpPostAsyn(uri, buf, strlen(buf)+1, NULL);

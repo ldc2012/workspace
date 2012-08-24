@@ -2,8 +2,8 @@
 
 
 ulimit -c 1000000
-workpath="/home/lidengchao/working/cloud_evaluation_center"
-program="cloud_evaluation_center"
+workpath="/root/primenets/cloud_monitor_center"
+program="cloud_monitor_center"
 prog="$workpath/$program"
 configfile="$workpath/config/${program}.conf"
 logpath="$workpath/log/"

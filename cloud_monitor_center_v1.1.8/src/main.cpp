@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
+#include <stdarg.h>
 #include <errno.h>
 
 #include <unistd.h>
@@ -12,14 +11,13 @@
 #include "conf.h"
 #include "common.h"
 #include "http_server.h"
-#include "evaluation_server.h"
-
-#define VERSION_INFO	"cloud_evaluation_center_v1.3.1"
 
 
-/* 全局变量 */
-extern struct conf_value_stu g_confvalue;
+#define VERSION_INFO	"cloud_monitor_center_v1.1.6"
+
 extern char g_log_path[256];
+extern struct conf_value_stu g_confvalue;
+
 
 static void print_usage();
 static void daemon_server();
@@ -30,7 +28,7 @@ int main(int argc, char *argv[])
 {
 	char ch;
 	char pathname[256];
-
+	
 	if (1 == argc) {
 		print_usage();
 		return -1;
@@ -41,17 +39,20 @@ int main(int argc, char *argv[])
 						snprintf(pathname, sizeof(pathname), "%s", optarg);
 						break;
 				case 'h':
-						//print_usage(); 
+						print_usage();
+						return 0; 
 						break;
 				case 'v':
-						fprintf(stderr, "%s\n", VERSION_INFO); 
+						fprintf(stderr, "%s\n", VERSION_INFO);
+						return 0; 
 						break;
 				default:
+						return -1; 
 						break;
 			}
 		}
 	}
-    
+	
 	if (-1 == load_profile(pathname))
 		return -1;
 	print_param(&g_confvalue);
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
 		return -1;
 	snprintf(g_log_path, sizeof(g_log_path), "%s", g_confvalue.log_path);
 
-    //process();
-    daemon_server();
+	//process();
+	daemon_server();
 
 	return 0;
 }
@@ -73,19 +74,16 @@ void print_usage()
 				-v program version\n", PROGRAM_NAME);
 }
 
-
 void daemon_server()
 {
 	if (0 != daemon(0, 0)) {
 		logerr("daemon(0, 0) fail: %s\n", strerror(errno));
 		exit(100);
-	}    
-    	
+	}
 	if (0 != chdir(g_confvalue.work_path)) {
 		logerr("chdir() %s fail: %s\n", g_confvalue.work_path);
 		exit(101);
 	}
- 
 	while (1) {
 		pid_t pid = fork();
 		if (-1 == pid) {
@@ -113,27 +111,16 @@ void daemon_server()
 
 void process()
 {
-
-	/* 启动httpserver监听服务 */
 	unsigned short port(g_confvalue.http_listen.port);
 	string ip(g_confvalue.http_listen.ip);
 	short timeout(5);
 	CHttpServer httpserver(port, ip.c_str(), timeout);
 	if (!httpserver.work()) {
 		logerr("httpserver start fail");
-		return;
 	}
 
-	/* 启动evaluationserver评估服务 */
-	CEvaluationServer evaluationserver;
-    if (!evaluationserver.work()) {
-		logerr("evaluationserver start fail");
-		return;
-	}
-	
-	while(1) {
+	for (; ;) {
 		select_sleep(1000, 0);
 	}
+	
 }
-
-
